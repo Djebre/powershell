@@ -7,8 +7,22 @@
 #                  | |         | |                                              
 #                  |_|         |_|                                              
 
+param ([string]$processname, [string]$arguments, [switch]$hidden = $false)
+
+$psi = new-object System.Diagnostics.ProcessStartInfo
+$psi.FileName = $processname
+$psi.Arguments = $arguments
+
+if ($hidden)
+{
+$psi.WindowStyle = hidden
+}
 
 
 
 
+
+Write-Output "Sc"
 Get-LocalUser| Select-Object Name
+
+#Export-Csv C:\Users\mscha\Desktop\Aubin\resultats.csv -Encoding "UTF8"
