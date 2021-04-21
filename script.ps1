@@ -7,22 +7,22 @@
 #                  | |         | |                                              
 #                  |_|         |_|                                              
 
-param ([string]$processname, [string]$arguments, [switch]$hidden = $false)
 
-$psi = new-object System.Diagnostics.ProcessStartInfo
-$psi.FileName = $processname
-$psi.Arguments = $arguments
+#Get-LocalUser | Where-Object PrincipalSource
 
-if ($hidden)
+
+#Get-LocalUser| Select-Object Name
+#Get-LocalUser | Export-Csv C:\Users\mscha\Desktop\Aubin\resultats.csv -NoTypeInformation -Encoding "UTF8" 
+
+$path = "C:\temp\ScriptRessource" 
+If(!(test-path $path))
 {
-$psi.WindowStyle = hidden
+New-Item -ItemType Directory -Force -Path $path
 }
 
+if (!(Get-ChildItem -Path $path -Recurse -Include *.csv))
+{
+#Get-LocalUser | Select-Object FullName,PasswordChangeableDate,PasswordExpires,UserMayChangePassword,PasswordRequired,PasswordLastSet,LastLogon | Export-Csv -Path $path\resultats.csv -NoTypeInformation -Encoding "UTF8" 
+Get-LocalUser  | Export-Csv -Path $path\resultats.csv -NoTypeInformation -Encoding "UTF8" 
+}
 
-
-
-
-Write-Output "Sc"
-Get-LocalUser| Select-Object Name
-
-#Export-Csv C:\Users\mscha\Desktop\Aubin\resultats.csv -Encoding "UTF8"
