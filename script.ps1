@@ -7,20 +7,19 @@
 #                  | |         | |                                              
 #                  |_|         |_|                                              
 
-
-#Get-LocalUser | Where-Object PrincipalSource
-
-
-#Get-LocalUser| Select-Object Name
-#Get-LocalUser | Export-Csv C:\Users\mscha\Desktop\Aubin\resultats.csv -NoTypeInformation -Encoding "UTF8" 
-
-#TODO: check si l'event existe deja
+if ([System.Diagnostics.EventLog]::Exists('Application') -and [System.Diagnostics.EventLog]::SourceExists("AcountSecurity"))
+{
+Write-Output "Application déjà lancée."
+}
+else
+{
 New-EventLog -LogName Application -Source "AcountSecurity"
+}
 
 $path = "C:\temp\ScriptRessource"
-$old = "C:\temp\ScriptRessource\old.csv"
-$new = "C:\temp\ScriptRessource\new.csv"
-If(!(test-path $path))
+$old = $path+"\old.csv"
+$new = $path+"\new.csv"
+If(!(Test-path $path))
 {
     New-Item -ItemType Directory -Force -Path $path
 }
@@ -28,13 +27,25 @@ If(!(test-path $path))
 if (!(Test-Path $old))
 {
     #Get-LocalUser | Select-Object FullName,PasswordChangeableDate,PasswordExpires,UserMayChangePassword,PasswordRequired,PasswordLastSet,LastLogon | Export-Csv -Path $path\resultats.csv -NoTypeInformation -Encoding "UTF8" 
-    Get-LocalUser  | Export-Csv -Path $old -NoTypeInformation -Encoding "UTF8" 
-}else {
-    Get-LocalUser  | Export-Csv -Path $new -NoTypeInformation -Encoding "UTF8"
-    $ocsv = Import-CSV $old -Delimiter ";"
-    $ncsv = Import-CSV $path\new.csv -Delimiter ";"
-    if( $null -ne (Compare-Object -ReferenceObject $ocsv -DifferenceObject $ncsv -Property "Name") ){
-        Write-EventLog -LogName Application -Source "AcountSecurity" -EntryType Warning -EventId 666 -Message "New local acount detected"
-    }
-    Rename-Item -Path $new -NewName $old
+    Get-LocalUser  | Export-Csv -Path $old -NoTypeInformation -Encoding "UTF8"
 }
+else 
+{
+    #Get-LocalUser  | Export-Csv -Path $new -NoTypeInformation -Encoding "UTF8"
+    $ocsv = Import-CSV  $old -Delimiter ","
+    $ncsv = Import-CSV  $new -Delimiter ","
+    $res = Compare-Object -ReferenceObject $ocsv -DifferenceObject $ncsv -Property Fullname
+    if($res){
+        Write-Output "Différence trouvé"
+        Write-EventLog -LogName Application -Source "AcountSecurity" -EntryType Warning -EventId 666 -Message "New local acount detected."
+    }
+    else 
+    {
+    Write-Output "Pas de diff"
+    }
+    #Remove-Item -Path $old
+    #Rename-Item -Path $new -NewName $old
+}
+#$ocsv | Format-Table
+#$ncsv | Format-Table
+#Compare-Object -ReferenceObject $ocsv -DifferenceObject $ncsv -Property Fullname
