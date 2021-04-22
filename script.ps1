@@ -14,15 +14,27 @@
 #Get-LocalUser| Select-Object Name
 #Get-LocalUser | Export-Csv C:\Users\mscha\Desktop\Aubin\resultats.csv -NoTypeInformation -Encoding "UTF8" 
 
-$path = "C:\temp\ScriptRessource" 
+#TODO: check si l'event existe deja
+New-EventLog -LogName Application -Source "AcountSecurity"
+
+$path = "C:\temp\ScriptRessource"
+$old = "C:\temp\ScriptRessource\old.csv"
+$new = "C:\temp\ScriptRessource\new.csv"
 If(!(test-path $path))
 {
-New-Item -ItemType Directory -Force -Path $path
+    New-Item -ItemType Directory -Force -Path $path
 }
 
-if (!(Get-ChildItem -Path $path -Recurse -Include *.csv))
+if (!(Test-Path $old))
 {
-#Get-LocalUser | Select-Object FullName,PasswordChangeableDate,PasswordExpires,UserMayChangePassword,PasswordRequired,PasswordLastSet,LastLogon | Export-Csv -Path $path\resultats.csv -NoTypeInformation -Encoding "UTF8" 
-Get-LocalUser  | Export-Csv -Path $path\resultats.csv -NoTypeInformation -Encoding "UTF8" 
+    #Get-LocalUser | Select-Object FullName,PasswordChangeableDate,PasswordExpires,UserMayChangePassword,PasswordRequired,PasswordLastSet,LastLogon | Export-Csv -Path $path\resultats.csv -NoTypeInformation -Encoding "UTF8" 
+    Get-LocalUser  | Export-Csv -Path $old -NoTypeInformation -Encoding "UTF8" 
+}else {
+    Get-LocalUser  | Export-Csv -Path $new -NoTypeInformation -Encoding "UTF8"
+    $ocsv = Import-CSV $old -Delimiter ";"
+    $ncsv = Import-CSV $path\new.csv -Delimiter ";"
+    if( $null -ne (Compare-Object -ReferenceObject $ocsv -DifferenceObject $ncsv -Property "Name") ){
+        Write-EventLog -LogName Application -Source "AcountSecurity" -EntryType Warning -EventId 666 -Message "New local acount detected"
+    }
+    Rename-Item -Path $new -NewName $old
 }
-
