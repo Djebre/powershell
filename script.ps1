@@ -7,45 +7,49 @@
 #                  | |         | |                                              
 #                  |_|         |_|                                              
 
+#On test si l'événement est déjà lancé
 if ([System.Diagnostics.EventLog]::Exists('Application') -and [System.Diagnostics.EventLog]::SourceExists("AcountSecurity"))
 {
 Write-Output "Application déjà lancée."
 }
 else
 {
+#On ajoute un object de type "EventLog" avec le nom "AcountSecurity"
 New-EventLog -LogName Application -Source "AcountSecurity"
 }
 
-$path = "C:\temp\ScriptRessource"
+$path = "C:\Temp\ScriptRessource"
 $old = $path+"\old.csv"
 $new = $path+"\new.csv"
+
+#Si le dossier "C:\Temp\ScriptRessource" n'existe pas, alors...
 If(!(Test-path $path))
 {
+    #On le créer
     New-Item -ItemType Directory -Force -Path $path
 }
 
+#Si le fichier "C:\Temp\ScriptRessource\old.csv" n'existe pas, alors...
 if (!(Test-Path $old))
 {
-    #Get-LocalUser | Select-Object FullName,PasswordChangeableDate,PasswordExpires,UserMayChangePassword,PasswordRequired,PasswordLastSet,LastLogon | Export-Csv -Path $path\resultats.csv -NoTypeInformation -Encoding "UTF8" 
-    Get-LocalUser  | Export-Csv -Path $old -NoTypeInformation -Encoding "UTF8"
+    #On exporte une première fois la liste des utilisateurs dans un format CSV avec le nom old.csv
+    Get-LocalUser | Export-Csv -Path $old -NoTypeInformation -Encoding "UTF8"
 }
 else 
 {
-    #Get-LocalUser  | Export-Csv -Path $new -NoTypeInformation -Encoding "UTF8"
+    #On exporte la liste des utilisateurs dans un format CSV avec le nom "new.csv"
+    Get-LocalUser  | Export-Csv -Path $new -NoTypeInformation -Encoding "UTF8"
+    #On importe les 2 CSV
     $ocsv = Import-CSV  $old -Delimiter ","
     $ncsv = Import-CSV  $new -Delimiter ","
+    #On compare les 2 CSV, puis on stocke la différence dans une variable
     $res = Compare-Object -ReferenceObject $ocsv -DifferenceObject $ncsv -Property Fullname
+    #Si il y a une différence, alors...
     if($res){
-        Write-Output "Différence trouvé"
-        Write-EventLog -LogName Application -Source "AcountSecurity" -EntryType Warning -EventId 666 -Message "New local acount detected."
+        #On crée une alerte de type "Warning" avec l'identifiant 666, visible dans l'observateur d'événements
+        Write-EventLog -LogName Application -Source "AcountSecurity" -EntryType Warning -EventId 666 -Message "Modification des comptes détecté."
+        #On remplace l'ancien fichier par le nouveau        
+        Remove-Item -Path $old
+        Rename-Item -Path $new -NewName $old
     }
-    else 
-    {
-    Write-Output "Pas de diff"
-    }
-    #Remove-Item -Path $old
-    #Rename-Item -Path $new -NewName $old
 }
-#$ocsv | Format-Table
-#$ncsv | Format-Table
-#Compare-Object -ReferenceObject $ocsv -DifferenceObject $ncsv -Property Fullname
